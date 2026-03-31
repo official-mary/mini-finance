@@ -1,0 +1,68 @@
+---
+# Play 1 — Install & Configure Nginx
+- name: Install and Configure Nginx
+  hosts: web
+  become: true
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Nginx and Git
+      apt:
+        name:
+          - nginx
+          - git
+        state: present
+
+    - name: Ensure Nginx is started and enabled
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+# Play 2 — Clone & Deploy Mini Finance Site
+- name: Deploy Mini Finance Site
+  hosts: web
+  become: true
+  handlers:
+    - name: Reload Nginx
+      service:
+        name: nginx
+        state: reloaded
+
+  tasks:
+    - name: Clone the repository from GitHub
+      git:
+        repo: "https://github.com/pravinmishraaws/mini_finance.git"
+        dest: "/tmp/mini_finance"
+        version: main
+        force: yes
+
+    - name: Copy site content to /var/www/html
+      copy:
+        src: "/tmp/mini_finance/"
+        dest: "/var/www/html/"
+        owner: www-data
+        group: www-data
+        mode: "0755"
+        remote_src: yes
+      notify: Reload Nginx
+
+# Play 3 — Verify Deployment
+- name: Verify Deployment
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Check site returns HTTP 200
+      uri:
+        url: "http://20.87.214.66"
+        return_content: yes
+      register: result
+
+    - name: Assert HTTP 200
+      assert:
+        that:
+          - result.status == 200
+        success_msg: "Site is up and returning HTTP 200!"
+        fail_msg: "Site is NOT returning HTTP 200!"
