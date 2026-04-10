@@ -1,0 +1,47 @@
+trigger:
+  branches:
+    include:
+      - main
+
+variables:
+  VM_IP: '4.221.67.171'
+  DEPLOY_PATH: '/var/www/html'
+
+pool:
+  name: SelfHostedPool
+
+stages:
+  - stage: Deploy
+    displayName: 'Deploy Static Website'
+    jobs:
+      - job: DeployJob
+        displayName: 'Copy and Verify Deployment'
+        steps:
+
+          - checkout: self
+            displayName: 'Checkout code'
+
+          - task: SSH@0
+            displayName: 'Fix permissions on VM'
+            inputs:
+              sshEndpoint: 'ubuntu-nginx-ssh'
+              runOptions: 'inline'
+              inline: |
+                sudo chown -R maryadmin:maryadmin /var/www/html
+                sudo chmod -R 755 /var/www/html
+
+          - task: CopyFilesOverSSH@0
+            displayName: 'Copy files to VM'
+            inputs:
+              sshEndpoint: 'ubuntu-nginx-ssh'
+              sourceFolder: '$(Build.SourcesDirectory)'
+              contents: '**'
+              targetFolder: '$(DEPLOY_PATH)'
+              cleanTargetFolder: true
+
+          - task: SSH@0
+            displayName: 'Verify deployment'
+            inputs:
+              sshEndpoint: 'ubuntu-nginx-ssh'
+              runOptions: 'inline'
+              inline: 'ls $(DEPLOY_PATH)'

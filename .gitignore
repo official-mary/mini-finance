@@ -1,14 +1,8 @@
-# Terraform
-.terraform/
+# Terraform sensitive files
 *.tfstate
 *.tfstate.backup
-*.tfvars
-.terraform.lock.hcl
+.terraform/
+terraform/.terraform.lock.hcl
 
-# SSH Keys
+# SSH keys
 *.pem
-*.key
-
-# OS files
-.DS_Store
-Thumbs.db
